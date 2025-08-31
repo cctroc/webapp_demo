@@ -1,0 +1,44 @@
+name: Build CSS
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - "assets/css/main.css"
+      - ".github/workflows/css-build.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  minify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 📦 Install postcss + cssnano
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install postcss postcss-cli cssnano --save-dev
+
+      - name: 🗜️ Minify CSS
+        run: |
+          npx postcss assets/css/main.css \
+            --use cssnano \
+            -o assets/css/main.min.css
+
+      - name: 💾 Commit built file
+        run: |
+          if ! git diff --quiet -- assets/css/main.min.css; then
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add assets/css/main.min.css
+            git commit -m "build: minify CSS"
+            git push
+          fi
